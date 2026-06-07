@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Ref Quiz</title>
+<title>ROLEX Ref</title>
 
 <style>
 *{
@@ -62,6 +62,11 @@ input{
     text-transform:uppercase;
 }
 
+input:focus{
+    outline:none;
+    border-color:#006039;
+}
+
 button{
     width:100%;
     border:none;
@@ -84,18 +89,10 @@ button{
     display:none;
 }
 
-.score{
-    margin-top:16px;
-    text-align:center;
-    font-size:18px;
-    font-weight:600;
-    color:#555;
-}
-
 .result{
-    margin-top:16px;
+    margin-top:18px;
     text-align:center;
-    font-size:28px;
+    font-size:30px;
     font-weight:700;
 }
 
@@ -114,6 +111,14 @@ button{
     font-weight:600;
 }
 
+.score{
+    margin-top:16px;
+    text-align:center;
+    font-size:18px;
+    font-weight:600;
+    color:#555;
+}
+
 @media (max-width:480px){
 
     .model{
@@ -127,6 +132,10 @@ button{
     input{
         font-size:22px;
     }
+
+    button{
+        font-size:18px;
+    }
 }
 </style>
 </head>
@@ -135,47 +144,50 @@ button{
 
 <div class="container">
 
-<div class="card">
+    <div class="card">
 
-    <div class="info">
-        <div class="label">モデル</div>
-        <div class="model" id="model"></div>
+        <div class="info">
+            <div class="label">モデル</div>
+            <div class="model" id="model"></div>
+        </div>
+
+        <div class="info">
+            <div class="label">サイズ</div>
+            <div class="value" id="size"></div>
+        </div>
+
+        <div class="info">
+            <div class="label">ベゼル / ブレス</div>
+            <div class="value" id="bezel"></div>
+        </div>
+
+        <div class="info">
+            <div class="label">素材</div>
+            <div class="value" id="material"></div>
+        </div>
+
+        <input
+            id="answer"
+            type="text"
+            placeholder="リファレンスを入力"
+            autocomplete="off"
+            autocapitalize="characters">
+
+        <button id="submitBtn">回答する</button>
+
+        <div id="result" class="result"></div>
+
+        <div id="correctAnswer" class="answer"></div>
+
+        <div class="score">
+            正解率: <span id="rate">0</span>%<br>
+            (<span id="correct">0</span> /
+            <span id="total">0</span>)
+        </div>
+
+        <button id="nextBtn">次の問題</button>
+
     </div>
-
-    <div class="info">
-        <div class="label">サイズ</div>
-        <div class="value" id="size"></div>
-    </div>
-
-    <div class="info">
-        <div class="label">ベゼル / ブレス</div>
-        <div class="value" id="bezel"></div>
-    </div>
-
-    <div class="info">
-        <div class="label">素材</div>
-        <div class="value" id="material"></div>
-    </div>
-
-    <input
-        id="answer"
-        placeholder="リファレンスを入力"
-        autocomplete="off"
-        autocapitalize="characters">
-
-    <button id="submitBtn">回答する</button>
-    <button id="nextBtn">次の問題</button>
-
-    <div class="score">
-        正解率: <span id="rate">0</span>%<br>
-        (<span id="correct">0</span> /
-        <span id="total">0</span>)
-    </div>
-
-    <div id="result" class="result"></div>
-    <div id="correctAnswer" class="answer"></div>
-
-</div>
 
 </div>
 
@@ -189,40 +201,60 @@ let correct = 0;
 
 async function loadCSV(){
 
-    const response = await fetch('ref.csv');
-    const text = await response.text();
+    try{
 
-    const lines = text.trim().split('\n');
+        const response = await fetch("ref.csv");
 
-    for(let i=1;i<lines.length;i++){
+        if(!response.ok){
+            throw new Error("CSV読み込み失敗");
+        }
 
-        const cols = lines[i].split(',');
+        const text = await response.text();
 
-        if(cols.length < 5) continue;
+        const lines = text
+            .trim()
+            .split(/\r?\n/);
 
-        data.push({
-            model: cols[0].trim(),
-            size: cols[1].trim(),
-            bezel: cols[2].trim(),
-            material: cols[3].trim(),
-            ref: cols[4].trim()
-        });
+        for(let i = 1; i < lines.length; i++){
+
+            const cols = lines[i].split(",");
+
+            if(cols.length < 5) continue;
+
+            data.push({
+                model: cols[0].trim(),
+                size: cols[1].trim(),
+                bezel: cols[2].trim(),
+                material: cols[3].trim(),
+                ref: cols[4].trim()
+            });
+        }
+
+        if(data.length === 0){
+            alert("CSVデータがありません");
+            return;
+        }
+
+        nextQuestion();
+
+    }catch(err){
+
+        console.error(err);
+        alert("ref.csv の読み込みに失敗しました");
     }
-
-    nextQuestion();
 }
 
 function updateScore(){
 
-    document.getElementById('correct').textContent = correct;
-    document.getElementById('total').textContent = total;
+    document.getElementById("correct").textContent = correct;
+    document.getElementById("total").textContent = total;
 
     const rate =
         total === 0
         ? 0
         : ((correct / total) * 100).toFixed(1);
 
-    document.getElementById('rate').textContent = rate;
+    document.getElementById("rate").textContent = rate;
 }
 
 function nextQuestion(){
@@ -230,83 +262,81 @@ function nextQuestion(){
     current =
         data[Math.floor(Math.random() * data.length)];
 
-    document.getElementById('model').textContent =
+    document.getElementById("model").textContent =
         current.model;
 
-    document.getElementById('size').textContent =
+    document.getElementById("size").textContent =
         current.size + " mm";
 
-    document.getElementById('bezel').textContent =
+    document.getElementById("bezel").textContent =
         current.bezel;
 
-    document.getElementById('material').textContent =
+    document.getElementById("material").textContent =
         current.material;
 
-    document.getElementById('answer').value = "";
+    document.getElementById("answer").value = "";
 
-    document.getElementById('result').textContent = "";
-    document.getElementById('correctAnswer').textContent = "";
+    document.getElementById("result").innerHTML = "";
+    document.getElementById("correctAnswer").textContent = "";
 
-    document.getElementById('submitBtn').style.display =
-        "block";
+    document.getElementById("submitBtn").style.display = "block";
+    document.getElementById("nextBtn").style.display = "none";
 
-    document.getElementById('nextBtn').style.display =
-        "none";
-
-    document.getElementById('answer').focus();
+    document.getElementById("answer").focus();
 }
 
 function checkAnswer(){
 
-    const user =
-        document.getElementById('answer')
+    const userAnswer =
+        document.getElementById("answer")
         .value
         .trim()
         .toUpperCase();
 
     const correctRef =
-        current.ref.toUpperCase();
+        current.ref
+        .trim()
+        .toUpperCase();
 
     total++;
 
-    if(user === correctRef){
+    if(userAnswer === correctRef){
 
         correct++;
 
-        document.getElementById('result').innerHTML =
+        document.getElementById("result").innerHTML =
             '<span class="correct">⭕ 正解</span>';
 
     }else{
 
-        document.getElementById('result').innerHTML =
+        document.getElementById("result").innerHTML =
             '<span class="wrong">❌ 不正解</span>';
 
-        document.getElementById('correctAnswer').textContent =
-            '正解：' + current.ref;
+        document.getElementById("correctAnswer").textContent =
+            "正解： " + current.ref;
     }
 
     updateScore();
 
-    document.getElementById('submitBtn').style.display =
-        "none";
-
-    document.getElementById('nextBtn').style.display =
-        "block";
+    document.getElementById("submitBtn").style.display = "none";
+    document.getElementById("nextBtn").style.display = "block";
 }
 
 document
-.getElementById('submitBtn')
-.addEventListener('click', checkAnswer);
+.getElementById("submitBtn")
+.addEventListener("click", checkAnswer);
 
 document
-.getElementById('nextBtn')
-.addEventListener('click', nextQuestion);
+.getElementById("nextBtn")
+.addEventListener("click", nextQuestion);
 
 document
-.getElementById('answer')
-.addEventListener('keypress', function(e){
+.getElementById("answer")
+.addEventListener("keydown", function(e){
 
-    if(e.key === 'Enter'){
+    if(e.key === "Enter" &&
+       document.getElementById("submitBtn").style.display !== "none"){
+
         checkAnswer();
     }
 });
