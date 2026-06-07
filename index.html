@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -8,228 +7,126 @@
 
 <style>
 body{
-    font-family:-apple-system,BlinkMacSystemFont,sans-serif;
-    background:#f5f5f5;
-    margin:0;
-    padding:16px;
-    max-width:800px;
+    font-family:sans-serif;
+    max-width:700px;
     margin:auto;
-}
-
-h1{
+    padding:20px;
     text-align:center;
 }
 
 .card{
-    background:white;
-    border-radius:16px;
+    border:1px solid #ddd;
+    border-radius:10px;
     padding:20px;
-    box-shadow:0 2px 8px rgba(0,0,0,0.1);
+    margin-top:20px;
 }
 
-.model{
-    font-size:1.5rem;
-    font-weight:bold;
-    margin-bottom:12px;
-}
-
-.info{
-    margin:8px 0;
+.question{
+    font-size:1.4rem;
+    margin:10px 0;
 }
 
 input{
-    width:100%;
-    padding:14px;
-    font-size:18px;
-    border-radius:10px;
-    border:1px solid #ccc;
-    box-sizing:border-box;
+    width:250px;
+    padding:10px;
+    font-size:1.2rem;
+    text-align:center;
 }
 
 button{
-    width:100%;
-    margin-top:10px;
-    padding:14px;
-    font-size:17px;
-    border:none;
-    border-radius:10px;
-    background:#111;
-    color:white;
-}
-
-.progress{
-    height:14px;
-    background:#ddd;
-    border-radius:999px;
-    overflow:hidden;
-    margin-bottom:12px;
-}
-
-.bar{
-    height:100%;
-    width:0%;
-    background:#111;
+    padding:10px 20px;
+    font-size:1rem;
+    margin-left:10px;
 }
 
 #result{
-    margin-top:16px;
+    margin-top:15px;
+    font-size:1.2rem;
     font-weight:bold;
-    font-size:1.1rem;
+}
+
+.correct{
+    color:green;
+}
+
+.wrong{
+    color:red;
 }
 </style>
-
 </head>
 
 <body>
 
-<h1>⌚ ROLEX Reference Quiz</h1>
-
-<div class="progress">
-    <div id="bar" class="bar"></div>
-</div>
-
-<div id="progressText"></div>
-
-<br>
+<h1>ROLEX Reference Quiz</h1>
 
 <div class="card">
 
-```
-<div id="model" class="model"></div>
+    <div class="question">
+        <strong>モデル</strong><br>
+        <span id="model"></span>
+    </div>
 
-<div class="info">
-    サイズ：
-    <span id="size"></span> mm
+    <div class="question">
+        <strong>サイズ</strong><br>
+        <span id="size"></span> mm
+    </div>
+
+    <div class="question">
+        <strong>ベゼル / ブレス</strong><br>
+        <span id="bezel"></span>
+    </div>
+
+    <br>
+
+    <input
+        type="text"
+        id="answer"
+        placeholder="Refを入力"
+        autocomplete="off"
+    >
+
+    <button onclick="checkAnswer()">回答</button>
+
+    <div id="result"></div>
+
 </div>
-
-<div class="info">
-    ベゼル/ブレス：
-    <span id="bezel"></span>
-</div>
-
-<div class="info">
-    素材：
-    <span id="material"></span>
-</div>
-```
-
-</div>
-
-<br>
-
-<input
-id="answer"
-placeholder="品番を入力"
-autocapitalize="characters"
-
->
-
-<button onclick="checkAnswer()">
-    回答
-</button>
-
-<div id="result"></div>
-
-<p>正答数：<span id="correct">0</span></p>
-<p>回答数：<span id="total">0</span></p>
-<p>正答率：<span id="accuracy">0</span>%</p>
 
 <script>
 
-let QUESTIONS = [];
-
-let pool = [];
-let wrong = [];
-
+let questions = [];
 let current = null;
-
-let correct = 0;
-let total = 0;
-
-let startCount = 0;
 
 async function loadCSV() {
 
-    const response = await fetch("ref.csv");
+    const res = await fetch("ref.csv");
+    const text = await res.text();
 
-    const csv = await response.text();
-
-    const rows = csv.trim().split(/\\r?\\n/);
+    const rows = text.trim().split("\n");
 
     const headers = rows[0].split(",");
 
-    QUESTIONS = rows.slice(1).map(row => {
+    questions = rows.slice(1).map(row => {
 
-        const values = row.split(",");
+        const cols = row.split(",");
 
-        let obj = {};
-
-        headers.forEach((header,index) => {
-
-            obj[header.trim()] =
-                values[index]?.trim();
-
-        });
-
-        return obj;
-
+        return {
+            model: cols[0],
+            size: cols[1],
+            bezel: cols[2],
+            material: cols[3],
+            ref: cols[4]
+        };
     });
-
-    pool = [...QUESTIONS];
-
-    startCount = QUESTIONS.length;
 
     nextQuestion();
 }
 
-function updateUI(){
-
-    document.getElementById("correct").textContent =
-        correct;
-
-    document.getElementById("total").textContent =
-        total;
-
-    document.getElementById("accuracy").textContent =
-        total
-            ? ((correct/total)*100).toFixed(1)
-            : "0";
-
-    const done =
-        startCount - pool.length;
-
-    document.getElementById("bar").style.width =
-        ((done/startCount)*100) + "%";
-
-    document.getElementById("progressText").textContent =
-        `進捗 ${done} / ${startCount}`;
-}
-
 function nextQuestion(){
 
-    if(pool.length === 0){
-
-        if(wrong.length){
-
-            pool = [...wrong];
-
-            wrong = [];
-
-            alert("復習モード開始");
-
-        }else{
-
-            alert("全問終了！");
-
-            return;
-        }
-    }
-
-    const index =
-        Math.floor(Math.random() * pool.length);
-
     current =
-        pool.splice(index,1)[0];
+        questions[
+            Math.floor(Math.random()*questions.length)
+        ];
 
     document.getElementById("model").textContent =
         current.model;
@@ -238,62 +135,51 @@ function nextQuestion(){
         current.size;
 
     document.getElementById("bezel").textContent =
-        current["bezel&Bracelet"] ||
         current.bezel;
-
-    document.getElementById("material").textContent =
-        current.material;
 
     document.getElementById("answer").value = "";
 
-    document.getElementById("result").innerHTML = "";
+    document.getElementById("result").textContent = "";
 
-    updateUI();
+    document.getElementById("answer").focus();
 }
 
 function checkAnswer(){
 
-    const answer =
-        document
-        .getElementById("answer")
+    const user =
+        document.getElementById("answer")
         .value
         .trim()
         .toUpperCase();
 
-    total++;
+    const correct =
+        current.ref
+        .trim()
+        .toUpperCase();
 
-    if(answer === current.ref.toUpperCase()){
+    const result =
+        document.getElementById("result");
 
-        correct++;
+    if(user === correct){
 
-        document.getElementById("result").innerHTML =
-            "✅ 正解";
-
-        document.getElementById("result").style.color =
-            "green";
+        result.className = "correct";
+        result.textContent = "〇 正解";
 
     }else{
 
-        wrong.push(current);
-
-        document.getElementById("result").innerHTML =
-            `❌ 不正解<br>正解：${current.ref}`;
-
-        document.getElementById("result").style.color =
-            "red";
+        result.className = "wrong";
+        result.textContent =
+            `× 不正解（正解: ${current.ref}）`;
     }
 
-    updateUI();
-
-    setTimeout(nextQuestion,1200);
+    setTimeout(nextQuestion,1000);
 }
 
 document
 .getElementById("answer")
-.addEventListener("keydown",(e)=>{
+.addEventListener("keydown",e=>{
 
     if(e.key==="Enter"){
-
         checkAnswer();
     }
 });
