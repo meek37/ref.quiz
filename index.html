@@ -334,10 +334,23 @@ document
 .getElementById("answer")
 .addEventListener("keydown", function(e){
 
-    if(e.key === "Enter" &&
-       document.getElementById("submitBtn").style.display !== "none"){
+    if(e.key !== "Enter") return;
+
+    e.preventDefault();
+
+    const submitVisible =
+        document.getElementById("submitBtn").style.display !== "none";
+
+    const nextVisible =
+        document.getElementById("nextBtn").style.display !== "none";
+
+    if(submitVisible){
 
         checkAnswer();
+
+    }else if(nextVisible){
+
+        nextQuestion();
     }
 });
 
