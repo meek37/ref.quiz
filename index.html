@@ -195,9 +195,11 @@ button{
 
 let data = [];
 let current = null;
-
+let questionPool = [];
+let current = null;
 let total = 0;
 let correct = 0;
+
 
 async function loadCSV(){
 
@@ -256,11 +258,30 @@ function updateScore(){
 
     document.getElementById("rate").textContent = rate;
 }
+    
+function shuffle(array){
 
+    for(let i = array.length - 1; i > 0; i--){
+
+        const j = Math.floor(Math.random() * (i + 1));
+
+        [array[i], array[j]] =
+        [array[j], array[i]];
+    }
+
+    return array;
+}
+    
 function nextQuestion(){
 
-    current =
-        data[Math.floor(Math.random() * data.length)];
+    if(questionPool.length === 0){
+    
+        questionPool = shuffle([...data]);
+    
+        alert("全問題を出題しました。再シャッフルします。");
+    }
+    
+    current = questionPool.pop();
 
     document.getElementById("model").textContent =
         current.model;
