@@ -169,7 +169,7 @@ button{
         <input
             id="answer"
             type="text"
-            placeholder="リファレンスを入力"
+            placeholder="ref.を入力"
             autocomplete="off"
             autocapitalize="characters">
 
@@ -183,6 +183,7 @@ button{
             正解率: <span id="rate">0</span>%<br>
             (<span id="correct">0</span> /
             <span id="total">0</span>)
+            残り: <span id="remaining"></span>
         </div>
 
         <button id="nextBtn">次の問題</button>
@@ -350,6 +351,9 @@ document
 document
 .getElementById("nextBtn")
 .addEventListener("click", nextQuestion);
+
+document.getElementById("remaining")
+.textContent = questionPool.length;
 
 document.addEventListener("keydown", function(e){
 
