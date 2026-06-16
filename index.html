@@ -1,10 +1,11 @@
+```html
 <!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title></title>
+<title>ROLEX Ref</title>
 
 <style>
 *{
@@ -16,11 +17,12 @@ body{
     padding:16px;
     background:#f5f5f5;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    min-height:100dvh;
 }
 
 .container{
     max-width:600px;
-    margin:auto;
+    margin:0 auto;
 }
 
 .card{
@@ -169,6 +171,7 @@ button{
         <input
             id="answer"
             type="text"
+            enterkeyhint="done"
             placeholder="リファレンスを入力"
             autocomplete="off"
             autocapitalize="characters">
@@ -182,7 +185,8 @@ button{
         <div class="score">
             正解率: <span id="rate">0</span>%<br>
             (<span id="correct">0</span> /
-            <span id="total">0</span>)
+            <span id="total">0</span>)<br>
+            残り: <span id="remaining">0</span>問
         </div>
 
         <button id="nextBtn">次の問題</button>
@@ -194,12 +198,24 @@ button{
 <script>
 
 let data = [];
-let current = null;
 let questionPool = [];
 let current = null;
+
 let total = 0;
 let correct = 0;
 
+function shuffle(array){
+
+    for(let i = array.length - 1; i > 0; i--){
+
+        const j = Math.floor(Math.random() * (i + 1));
+
+        [array[i], array[j]] =
+        [array[j], array[i]];
+    }
+
+    return array;
+}
 
 async function loadCSV(){
 
@@ -213,11 +229,9 @@ async function loadCSV(){
 
         const text = await response.text();
 
-        const lines = text
-            .trim()
-            .split(/\r?\n/);
+        const lines = text.trim().split(/\r?\n/);
 
-        for(let i = 1; i < lines.length; i++){
+        for(let i=1;i<lines.length;i++){
 
             const cols = lines[i].split(",");
 
@@ -232,16 +246,14 @@ async function loadCSV(){
             });
         }
 
-        if(data.length === 0){
-            alert("CSVデータがありません");
-            return;
-        }
+        questionPool = shuffle([...data]);
 
+        updateScore();
         nextQuestion();
 
-    }catch(err){
+    }catch(error){
 
-        console.error(err);
+        console.error(error);
         alert("ref.csv の読み込みに失敗しました");
     }
 }
@@ -257,31 +269,23 @@ function updateScore(){
         : ((correct / total) * 100).toFixed(1);
 
     document.getElementById("rate").textContent = rate;
+
+    document.getElementById("remaining").textContent =
+        questionPool.length;
 }
-    
-function shuffle(array){
 
-    for(let i = array.length - 1; i > 0; i--){
-
-        const j = Math.floor(Math.random() * (i + 1));
-
-        [array[i], array[j]] =
-        [array[j], array[i]];
-    }
-
-    return array;
-}
-    
 function nextQuestion(){
 
     if(questionPool.length === 0){
-    
+
         questionPool = shuffle([...data]);
-    
+
         alert("全問題を出題しました。再シャッフルします。");
     }
-    
+
     current = questionPool.pop();
+
+    updateScore();
 
     document.getElementById("model").textContent =
         current.model;
@@ -307,6 +311,8 @@ function nextQuestion(){
 }
 
 function checkAnswer(){
+
+    document.getElementById("answer").blur();
 
     const userAnswer =
         document.getElementById("answer")
@@ -343,13 +349,21 @@ function checkAnswer(){
     document.getElementById("nextBtn").style.display = "block";
 }
 
-document
-.getElementById("submitBtn")
-.addEventListener("click", checkAnswer);
+const answerInput =
+    document.getElementById("answer");
 
-document
-.getElementById("nextBtn")
-.addEventListener("click", nextQuestion);
+answerInput.addEventListener("focus", () => {
+
+    setTimeout(() => {
+
+        answerInput.scrollIntoView({
+            behavior:"smooth",
+            block:"center"
+        });
+
+    },300);
+
+});
 
 document.addEventListener("keydown", function(e){
 
@@ -373,9 +387,18 @@ document.addEventListener("keydown", function(e){
     }
 });
 
+document
+.getElementById("submitBtn")
+.addEventListener("click", checkAnswer);
+
+document
+.getElementById("nextBtn")
+.addEventListener("click", nextQuestion);
+
 loadCSV();
 
 </script>
 
 </body>
 </html>
+```
